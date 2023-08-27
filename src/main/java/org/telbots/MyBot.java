@@ -73,7 +73,17 @@ public class MyBot extends TelegramLongPollingBot {
 
                     log.debug("Files: {}", files);
                     if (!files.isEmpty()) {
-                        String zipFileName = "github_files.zip";
+                        StringBuilder fileNameBuffer = new StringBuilder();
+                        fileNameBuffer.append(user);
+                        fileNameBuffer.append("_");
+                        fileNameBuffer.append(repository);
+                        fileNameBuffer.append("_");
+                        fileNameBuffer.append(ref);
+                        fileNameBuffer.append("_");
+                        fileNameBuffer.append(urlParts[7]); // dir
+                        fileNameBuffer.append("_");
+                        fileNameBuffer.append("files.zip");
+                        String zipFileName = fileNameBuffer.toString();
                         byte[] zipFileContent = downloadAndZipFiles(files);
 
                         sendDocument(chatId, zipFileContent, zipFileName);
