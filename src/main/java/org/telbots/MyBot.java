@@ -50,8 +50,9 @@ public class MyBot extends TelegramLongPollingBot {
         String ref = urlParts[6];
         StringBuilder sb = new StringBuilder();
         for (int i = 7; i < urlParts.length; i++) {
+            sb.append("/");
             sb.append(urlParts[i]);
-            sb.append(File.separatorChar);
+            sb.append("/");
         }
         String dir = sb.toString();
 
@@ -93,7 +94,7 @@ public class MyBot extends TelegramLongPollingBot {
             while ((entry = zipInputStream.getNextEntry()) != null) {
                 String fileName = entry.getName();
                 if (!entry.isDirectory() && fileName.contains(dir)) {
-                    fileName = fileName.substring(fileName.indexOf(File.separatorChar));
+                    fileName = fileName.substring(fileName.indexOf("/"));
                     String url = String.format("https://raw.githubusercontent.com/%s/%s/%s%s",
                             user, repository, ref, fileName);
                     files.add(new GitHubFile(fileName, url));
