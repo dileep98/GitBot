@@ -24,5 +24,11 @@ class GitHubFile {
     public void setUrl(String url) {
         this.url = url;
     }
-    // Getters and setters
+
+    @Override
+    public String toString() {
+        return "GitHubFile{" + "path='" + path + '\'' +
+                ", url='" + url + '\'' +
+                '}';
+    }
 }
