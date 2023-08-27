@@ -11,6 +11,7 @@ import java.util.List;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 import java.util.zip.ZipOutputStream;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.http.HttpEntity;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpGet;
@@ -22,6 +23,7 @@ import org.telegram.telegrambots.meta.api.objects.InputFile;
 import org.telegram.telegrambots.meta.api.objects.Update;
 import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
 
+@Slf4j
 public class MyBot extends TelegramLongPollingBot {
 
     public MyBot() {
@@ -33,7 +35,7 @@ public class MyBot extends TelegramLongPollingBot {
         if (update.hasMessage() && update.getMessage().hasText()) {
             String messageText = update.getMessage().getText();
             long chatId = update.getMessage().getChatId();
-//            long chatId = 1l;
+//            long chatId = 1L;
             // Assuming the user sends a message with a GitHub URL
             if (messageText.startsWith("https://github.com/")) {
                 sendGitHubFilesAsZip(chatId, messageText);
@@ -53,23 +55,22 @@ public class MyBot extends TelegramLongPollingBot {
         }
         String dir = sb.toString();
 
-        var zipUrl = String.format("https://api.github.com/repos/%s/%s/zipball/%s", user, repository, ref);
-        System.out.println("Input URL: " + url + " ZipUrl: " + zipUrl);
+        log.info("User: {}, Repo: {}, Ref: {}, Dir: {}", user, repository, ref, dir);
 
-        System.out.println(user + "=" + repository + "=" + ref + "=" + dir);
+        var zipUrl = String.format("https://api.github.com/repos/%s/%s/zipball/%s", user, repository, ref);
+        log.info("Input URL: {} ZipUrl: {}", url, zipUrl);
+
         try (CloseableHttpClient httpClient = HttpClients.createDefault()) {
             HttpGet httpGet = new HttpGet(zipUrl);
-            System.out.println(user + "=" + repository + "=" + ref + "==" + dir);
 
             try (CloseableHttpResponse response = httpClient.execute(httpGet)) {
+                log.info("Http response status: {}", response.getStatusLine());
                 HttpEntity entity = response.getEntity();
-                System.out.println(user + "=" + repository + "=" + ref + "===" + dir);
                 if (entity != null) {
                     InputStream zipStream = entity.getContent();
-                    System.out.println(user + "=" + repository + "=" + ref + "====" + dir);
                     List<GitHubFile> files = parseZipContents(zipStream, user, repository, ref, dir);
 
-                    System.out.println(files);
+                    log.debug("Files: {}", files);
                     if (!files.isEmpty()) {
                         String zipFileName = "github_files.zip";
                         byte[] zipFileContent = downloadAndZipFiles(files);
@@ -79,25 +80,23 @@ public class MyBot extends TelegramLongPollingBot {
                 }
             }
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error("Exception in sendGitHubFilesAsZip", e);
         }
     }
 
     private List<GitHubFile> parseZipContents(InputStream zipStream, String user, String repository, String ref, String dir) throws IOException {
+        log.info("Parsing zip contents");
         List<GitHubFile> files = new ArrayList<>();
 
         try (ZipInputStream zipInputStream = new ZipInputStream(zipStream)) {
             ZipEntry entry;
             while ((entry = zipInputStream.getNextEntry()) != null) {
-                if (!entry.isDirectory()) {
-                    String fileName = entry.getName();
-                    System.out.println(fileName);
-                    if (fileName.contains(dir)) {
-                        fileName = fileName.substring(fileName.indexOf(File.separatorChar));
-                        String url = String.format("https://raw.githubusercontent.com/%s/%s/%s%s",
-                                user, repository, ref, fileName);
-                        files.add(new GitHubFile(fileName, url));
-                    }
+                String fileName = entry.getName();
+                if (!entry.isDirectory() && fileName.contains(dir)) {
+                    fileName = fileName.substring(fileName.indexOf(File.separatorChar));
+                    String url = String.format("https://raw.githubusercontent.com/%s/%s/%s%s",
+                            user, repository, ref, fileName);
+                    files.add(new GitHubFile(fileName, url));
                 }
             }
         }
@@ -106,6 +105,7 @@ public class MyBot extends TelegramLongPollingBot {
     }
 
     private byte[] downloadAndZipFiles(List<GitHubFile> files) throws IOException {
+        log.info("Zipping {} files", files.size());
         ByteArrayOutputStream zipByteArrayOutputStream = new ByteArrayOutputStream();
         try (ZipOutputStream zipOutputStream = new ZipOutputStream(zipByteArrayOutputStream)) {
             byte[] buffer = new byte[4096];
@@ -129,6 +129,7 @@ public class MyBot extends TelegramLongPollingBot {
 
     private void sendDocument(long chatId, byte[] documentContent, String fileName) {
         try {
+            log.info("Sending document");
             ByteArrayInputStream inputStream = new ByteArrayInputStream(documentContent);
 
             SendDocument document = new SendDocument();
@@ -137,7 +138,7 @@ public class MyBot extends TelegramLongPollingBot {
 
             execute(document);
         } catch (TelegramApiException e) {
-            e.printStackTrace();
+            log.error("Error while sending document", e);
         }
     }
 
