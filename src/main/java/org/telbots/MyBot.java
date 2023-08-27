@@ -27,7 +27,7 @@ import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
 public class MyBot extends TelegramLongPollingBot {
 
     public MyBot() {
-        super("6559941276:AAEXfjqXu2N-g5ZZon5H3J32sJV3svBIwv4");
+        super("6559941276:AAHUONO2_xG0Ofd6tddqWFw4ry6YEzwoJCo");
     }
 
     @Override
