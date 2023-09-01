@@ -34,8 +34,8 @@ public class MyBot extends TelegramLongPollingBot {
     public void onUpdateReceived(Update update) {
         if (update.hasMessage() && update.getMessage().hasText()) {
             String messageText = update.getMessage().getText();
-//            long chatId = update.getMessage().getChatId();
-            long chatId = 1L;
+            long chatId = update.getMessage().getChatId();
+//            long chatId = 1L;
             // Assuming the user sends a message with a GitHub URL
             if (messageText.startsWith("https://github.com/")) {
                 sendGitHubFilesAsZip(chatId, messageText);
@@ -48,9 +48,8 @@ public class MyBot extends TelegramLongPollingBot {
         String user = urlParts[3];
         String repository = urlParts[4];
         String ref = urlParts[6];
-        StringBuilder sb = new StringBuilder();
+        StringBuilder sb = new StringBuilder("/");
         for (int i = 7; i < urlParts.length; i++) {
-            sb.append("/");
             sb.append(urlParts[i]);
             sb.append("/");
         }
@@ -67,6 +66,10 @@ public class MyBot extends TelegramLongPollingBot {
             try (CloseableHttpResponse response = httpClient.execute(httpGet)) {
                 log.info("Http response status: {}", response.getStatusLine());
                 HttpEntity entity = response.getEntity();
+                if (response.getStatusLine().getStatusCode() != 200) {
+                    log.error("Given repo not found");
+                    return;
+                }
                 if (entity != null) {
                     InputStream zipStream = entity.getContent();
                     List<GitHubFile> files = parseZipContents(zipStream, user, repository, ref, dir);
