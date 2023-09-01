@@ -13,12 +13,12 @@ public class Main {
 
 
         try {
-//            Update update = new Update();
-//            var msg = new Message();
-//            var url = "https://github.com/dileep98/GitBot/tree/master/src/main";
-//            msg.setText(url);
-//            update.setMessage(msg);
-//            new MyBot().onUpdateReceived(update);
+            Update update = new Update();
+            var msg = new Message();
+            var url = "https://github.com/dileep98/GitBot/tree/master";
+            msg.setText(url);
+            update.setMessage(msg);
+            new MyBot().onUpdateReceived(update);
             TelegramBotsApi botsApi = new TelegramBotsApi(DefaultBotSession.class);
             botsApi.registerBot(new MyBot());
         } catch (TelegramApiException e) {

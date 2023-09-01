@@ -2,7 +2,6 @@ package org.telbots;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
-import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URL;
@@ -12,6 +11,7 @@ import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 import java.util.zip.ZipOutputStream;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.http.HttpEntity;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpGet;
@@ -34,8 +34,8 @@ public class MyBot extends TelegramLongPollingBot {
     public void onUpdateReceived(Update update) {
         if (update.hasMessage() && update.getMessage().hasText()) {
             String messageText = update.getMessage().getText();
-            long chatId = update.getMessage().getChatId();
-//            long chatId = 1L;
+//            long chatId = update.getMessage().getChatId();
+            long chatId = 1L;
             // Assuming the user sends a message with a GitHub URL
             if (messageText.startsWith("https://github.com/")) {
                 sendGitHubFilesAsZip(chatId, messageText);
@@ -80,8 +80,10 @@ public class MyBot extends TelegramLongPollingBot {
                         fileNameBuffer.append("_");
                         fileNameBuffer.append(ref);
                         fileNameBuffer.append("_");
-                        fileNameBuffer.append(urlParts[7]); // dir
-                        fileNameBuffer.append("_");
+                        if (StringUtils.isNotBlank(dir)) {
+                            fileNameBuffer.append(dir);
+                            fileNameBuffer.append("_");
+                        }
                         fileNameBuffer.append("files.zip");
                         String zipFileName = fileNameBuffer.toString();
                         byte[] zipFileContent = downloadAndZipFiles(files);
