@@ -17,6 +17,7 @@ import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClients;
+import org.apache.http.util.EntityUtils;
 import org.telegram.telegrambots.bots.TelegramLongPollingBot;
 import org.telegram.telegrambots.meta.api.methods.send.SendDocument;
 import org.telegram.telegrambots.meta.api.objects.InputFile;
@@ -47,11 +48,32 @@ public class MyBot extends TelegramLongPollingBot {
         String[] urlParts = url.split("/");
         String user = urlParts[3];
         String repository = urlParts[4];
-        String ref = urlParts[6];
         StringBuilder sb = new StringBuilder("/");
-        for (int i = 7; i < urlParts.length; i++) {
-            sb.append(urlParts[i]);
-            sb.append("/");
+        String ref = "";
+        if (urlParts.length > 6) {
+            ref = urlParts[6];
+            for (int i = 7; i < urlParts.length; i++) {
+                sb.append(urlParts[i]);
+                sb.append("/");
+            }
+        } else {
+            var repoInfoUrl = String.format("https://api.github.com/repos/%s/%s",user,repository);
+            HttpGet httpGet = new HttpGet(repoInfoUrl);
+            try (CloseableHttpClient httpClient = HttpClients.createDefault()) {
+                try (CloseableHttpResponse response = httpClient.execute(httpGet)) {
+                    if (response.getStatusLine().getStatusCode() != 200) {
+                        log.error("Given repo not found");
+                        return;
+                    }
+                    var entity = response.getEntity();
+                    String responseBody = EntityUtils.toString(entity);
+
+                    // Extract the default branch
+                    ref = responseBody.split("\"default_branch\":\"")[1].split("\"")[0];
+                }
+            } catch (Exception e) {
+                log.error("Exception in getting repo info", e);
+            }
         }
         String dir = sb.toString();
 
