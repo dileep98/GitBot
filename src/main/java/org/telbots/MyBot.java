@@ -2,9 +2,12 @@ package org.telbots;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URL;
+import java.nio.file.InvalidPathException;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.zip.ZipEntry;
@@ -57,7 +60,7 @@ public class MyBot extends TelegramLongPollingBot {
                 sb.append("/");
             }
         } else {
-            var repoInfoUrl = String.format("https://api.github.com/repos/%s/%s",user,repository);
+            var repoInfoUrl = String.format("https://api.github.com/repos/%s/%s", user, repository);
             HttpGet httpGet = new HttpGet(repoInfoUrl);
             try (CloseableHttpClient httpClient = HttpClients.createDefault()) {
                 try (CloseableHttpResponse response = httpClient.execute(httpGet)) {
@@ -110,7 +113,7 @@ public class MyBot extends TelegramLongPollingBot {
                             fileNameBuffer.append("_");
                         }
                         fileNameBuffer.append("files.zip");
-                        String zipFileName = fileNameBuffer.toString();
+                        String zipFileName = makeValidFilename(fileNameBuffer.toString());
                         byte[] zipFileContent = downloadAndZipFiles(files);
 
                         sendDocument(chatId, zipFileContent, zipFileName);
@@ -178,6 +181,29 @@ public class MyBot extends TelegramLongPollingBot {
         } catch (TelegramApiException e) {
             log.error("Error while sending document", e);
         }
+    }
+
+    private String makeValidFilename(String inputFilename) {
+        // Replace illegal characters with underscores
+        String validFilename = inputFilename.replaceAll("[^a-zA-Z0-9.-]", "_");
+
+        // Ensure the filename is not too long
+        int maxLength = 255; // Adjust this as needed for your system
+        if (validFilename.length() > maxLength) {
+            validFilename = validFilename.substring(0, maxLength);
+        }
+
+        // Normalize the path separator
+        validFilename = validFilename.replace(File.separator, "/");
+
+        // Check if the filename is valid according to the platform
+        try {
+            Paths.get(validFilename);
+        } catch (InvalidPathException e) {
+            validFilename = "github.zip";
+        }
+
+        return validFilename;
     }
 
     @Override
